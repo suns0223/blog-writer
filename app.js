@@ -41,13 +41,40 @@ photoInput.addEventListener('change', (e) => handleFiles(e.target.files));
 function handleFiles(files) {
   for (const file of files) {
     if (!file.type.startsWith('image/')) continue;
+    resizeImage(file, 800).then((resized) => {
+      photos.push({ name: file.name, dataUrl: resized });
+      renderPhotos();
+    });
+  }
+}
+
+// ── 사진 리사이즈 (API 토큰 절약) ──
+function resizeImage(file, maxSize) {
+  return new Promise((resolve) => {
+    const img = new Image();
     const reader = new FileReader();
     reader.onload = (e) => {
-      photos.push({ name: file.name, dataUrl: e.target.result, file });
-      renderPhotos();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          } else {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.src = e.target.result;
     };
     reader.readAsDataURL(file);
-  }
+  });
 }
 
 function renderPhotos() {
@@ -158,7 +185,7 @@ async function callGemini(apiKey, data) {
     });
   }
 
-  const model = 'gemini-2.0-flash';
+  const model = 'gemini-2.0-flash-lite';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const response = await fetch(url, {
