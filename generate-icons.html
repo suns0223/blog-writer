@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html><head><title>아이콘 생성</title></head>
+<body>
+<p>각 캔버스를 우클릭 → "이미지 저장"으로 저장하세요</p>
+<p>192x192:</p><canvas id="c192" width="192" height="192"></canvas>
+<p>512x512:</p><canvas id="c512" width="512" height="512"></canvas>
+<script>
+function draw(id, size) {
+  const c = document.getElementById(id).getContext('2d');
+  // 배경
+  c.fillStyle = '#4a90d9';
+  c.beginPath();
+  c.roundRect(0, 0, size, size, size * 0.2);
+  c.fill();
+  // 텍스트
+  c.fillStyle = '#fff';
+  c.font = `bold ${size * 0.35}px -apple-system, sans-serif`;
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.fillText('✍️', size / 2, size * 0.35);
+  c.font = `bold ${size * 0.18}px -apple-system, sans-serif`;
+  c.fillText('썬스', size / 2, size * 0.7);
+}
+draw('c192', 192);
+draw('c512', 512);
+</script>
+</body></html>

@@ -1,0 +1,14 @@
+{
+  "name": "썬스 블로그 글 생성기",
+  "short_name": "썬스블로그",
+  "description": "맛집 사진과 정보를 입력하면 AI가 블로그 글을 자동 작성",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#4a90d9",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
