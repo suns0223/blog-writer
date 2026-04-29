@@ -1,4 +1,4 @@
-const CACHE_NAME = 'suns-blog-v4';
+const CACHE_NAME = 'suns-blog-v5';
 const ASSETS = [
   './index.html',
   './app.js',

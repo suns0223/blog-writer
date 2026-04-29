@@ -14,223 +14,118 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, 'Noto Sans KR', sans-serif;
-      background: #f5f5f5;
-      color: #333;
-      line-height: 1.6;
+      background: #f5f5f5; color: #333; line-height: 1.6;
     }
-    .container {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 24px 16px;
-    }
-    h1 {
-      text-align: center;
-      font-size: 24px;
-      margin-bottom: 8px;
-    }
-    .subtitle {
-      text-align: center;
-      color: #888;
-      font-size: 14px;
-      margin-bottom: 32px;
-    }
+    .container { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
+    h1 { text-align: center; font-size: 24px; margin-bottom: 8px; }
+    .subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 32px; }
     .card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      background: #fff; border-radius: 12px; padding: 24px;
+      margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
-    label {
-      display: block;
-      font-weight: 600;
-      font-size: 14px;
-      margin-bottom: 6px;
-      color: #555;
-    }
+    label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; color: #555; }
+    .label-sub { font-weight: 400; font-size: 12px; color: #999; margin-left: 4px; }
     input[type="text"], input[type="url"], textarea {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font-size: 15px;
-      font-family: inherit;
-      transition: border-color 0.2s;
+      width: 100%; padding: 10px 12px; border: 1px solid #ddd;
+      border-radius: 8px; font-size: 15px; font-family: inherit;
     }
-    input:focus, textarea:focus {
-      outline: none;
-      border-color: #4a90d9;
-    }
+    input:focus, textarea:focus { outline: none; border-color: #4a90d9; }
     textarea { resize: vertical; min-height: 80px; }
     .field { margin-bottom: 16px; }
     .field:last-child { margin-bottom: 0; }
 
-    /* 사진 업로드 */
-    .photo-upload-area {
-      border: 2px dashed #ccc;
-      border-radius: 12px;
-      padding: 32px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-      color: #999;
+    /* 메뉴 + 사진 */
+    .menu-block { border: 1px solid #eee; border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+    .menu-block-header { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .menu-block-header input { flex: 1; }
+    .menu-photo-area {
+      border: 1px dashed #ccc; border-radius: 8px; padding: 12px;
+      text-align: center; cursor: pointer; color: #aaa; font-size: 13px;
     }
-    .photo-upload-area:hover, .photo-upload-area.dragover {
-      border-color: #4a90d9;
-      background: #f0f7ff;
-    }
-    .photo-upload-area .icon { font-size: 36px; margin-bottom: 8px; }
-    #photoInput { display: none; }
-    .photo-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-      gap: 8px;
-      margin-top: 12px;
+    .menu-photo-area:hover { border-color: #4a90d9; background: #f8fbff; }
+    .menu-photo-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 6px; margin-top: 8px;
     }
     .photo-thumb {
-      position: relative;
-      aspect-ratio: 1;
-      border-radius: 8px;
-      overflow: hidden;
+      position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden;
     }
-    .photo-thumb img {
-      width: 100%; height: 100%;
-      object-fit: cover;
-    }
+    .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
     .photo-thumb .remove {
-      position: absolute; top: 4px; right: 4px;
-      background: rgba(0,0,0,0.6); color: #fff;
-      border: none; border-radius: 50%;
-      width: 22px; height: 22px;
-      cursor: pointer; font-size: 12px;
+      position: absolute; top: 3px; right: 3px;
+      background: rgba(0,0,0,0.6); color: #fff; border: none;
+      border-radius: 50%; width: 20px; height: 20px;
+      cursor: pointer; font-size: 11px;
       display: flex; align-items: center; justify-content: center;
     }
-    .photo-thumb .photo-label {
-      position: absolute; bottom: 0; left: 0; right: 0;
-      background: rgba(0,0,0,0.5); color: #fff;
-      font-size: 11px; padding: 2px 4px;
-      text-align: center;
-    }
 
-    /* 메뉴 입력 */
-    .menu-item {
-      display: flex; gap: 8px; margin-bottom: 8px; align-items: center;
-    }
-    .menu-item input { flex: 1; }
     .btn-remove {
       background: #ff5252; color: #fff; border: none;
-      border-radius: 6px; padding: 8px 12px; cursor: pointer;
-      font-size: 13px;
+      border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 13px;
+      flex-shrink: 0;
     }
     .btn-add {
-      background: none; border: 1px dashed #aaa;
-      border-radius: 8px; padding: 8px 16px;
-      cursor: pointer; color: #888; font-size: 13px;
-      width: 100%;
+      background: none; border: 1px dashed #aaa; border-radius: 8px;
+      padding: 8px 16px; cursor: pointer; color: #888; font-size: 13px; width: 100%;
     }
     .btn-add:hover { border-color: #4a90d9; color: #4a90d9; }
 
-    /* API 키 */
-    .api-key-field input {
-      font-family: monospace;
-      font-size: 13px;
+    /* 기타 사진 */
+    .etc-photo-area {
+      border: 2px dashed #ccc; border-radius: 12px; padding: 24px;
+      text-align: center; cursor: pointer; color: #999;
     }
+    .etc-photo-area:hover { border-color: #4a90d9; background: #f0f7ff; }
+    .etc-photo-area .icon { font-size: 28px; margin-bottom: 4px; }
 
-    /* 생성 버튼 */
+    .api-key-field input { font-family: monospace; font-size: 13px; }
+    .api-saved { color: #4caf50; font-size: 12px; margin-top: 4px; }
+
     .btn-generate {
-      width: 100%;
-      padding: 14px;
-      background: #4a90d9;
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: 600;
+      width: 100%; padding: 14px; background: #4a90d9; color: #fff;
+      border: none; border-radius: 10px; font-size: 16px; font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s;
     }
     .btn-generate:hover { background: #3a7bc8; }
-    .btn-generate:disabled {
-      background: #ccc; cursor: not-allowed;
-    }
+    .btn-generate:disabled { background: #ccc; cursor: not-allowed; }
 
-    /* 로딩 */
-    .loading {
-      display: none;
-      text-align: center;
-      padding: 24px;
-      color: #888;
-    }
+    .loading { display: none; text-align: center; padding: 24px; color: #888; }
     .loading.active { display: block; }
     .spinner {
-      display: inline-block;
-      width: 24px; height: 24px;
-      border: 3px solid #ddd;
-      border-top-color: #4a90d9;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-bottom: 8px;
+      display: inline-block; width: 24px; height: 24px;
+      border: 3px solid #ddd; border-top-color: #4a90d9;
+      border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 8px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* 결과 */
     .result {
-      display: none;
-      background: #fff;
-      border-radius: 12px;
-      padding: 24px;
-      margin-top: 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      display: none; background: #fff; border-radius: 12px;
+      padding: 24px; margin-top: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
     .result.active { display: block; }
-    .result-header {
-      display: flex; justify-content: space-between;
-      align-items: center; margin-bottom: 16px;
-    }
+    .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .result-header h2 { font-size: 18px; }
-    .btn-copy {
-      background: #eee; border: none; border-radius: 6px;
-      padding: 6px 14px; cursor: pointer; font-size: 13px;
-    }
+    .btn-copy { background: #eee; border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
     .btn-copy:hover { background: #ddd; }
     #resultContent {
-      white-space: pre-wrap;
-      font-size: 14px;
-      line-height: 1.8;
-      border: 1px solid #eee;
-      border-radius: 8px;
-      padding: 16px;
-      max-height: 600px;
-      overflow-y: auto;
+      white-space: pre-wrap; font-size: 14px; line-height: 1.8;
+      border: 1px solid #eee; border-radius: 8px; padding: 16px;
+      max-height: 600px; overflow-y: auto;
     }
 
-    /* 모바일 최적화 */
     @media (max-width: 480px) {
       .container { padding: 16px 12px; }
       h1 { font-size: 20px; }
       .card { padding: 16px; }
-      .photo-grid {
-        grid-template-columns: repeat(3, 1fr);
-      }
       .btn-generate {
-        position: sticky;
-        bottom: 12px;
-        z-index: 10;
+        position: sticky; bottom: 12px; z-index: 10;
         box-shadow: 0 -2px 12px rgba(0,0,0,0.15);
       }
     }
-
-    /* iOS safe area */
     @supports (padding-bottom: env(safe-area-inset-bottom)) {
       body { padding-bottom: env(safe-area-inset-bottom); }
     }
-
-    /* API 키 저장 상태 */
-    .api-saved {
-      color: #4caf50;
-      font-size: 12px;
-      margin-top: 4px;
-    }
+    .file-input-hidden { display: none; }
   </style>
 </head>
 <body>
@@ -258,63 +153,50 @@
         <input type="text" id="area" placeholder="예: 선릉, 강남, 가로수길" />
       </div>
       <div class="field">
-        <label>🗺️ 네이버 지도 URL</label>
+        <label>🗺️ 네이버 지도 URL <span class="label-sub">(선택)</span></label>
         <input type="url" id="mapUrl" placeholder="https://naver.me/..." />
-      </div>
-      <div class="field">
-        <label>📫 주소 (선택)</label>
-        <input type="text" id="address" placeholder="예: 서울특별시 강남구 선릉로 524" />
       </div>
     </div>
 
-    <!-- 메뉴 -->
+    <!-- 메뉴 + 메뉴별 사진 -->
     <div class="card">
-      <label>🍽️ 주문한 메뉴</label>
-      <div id="menuList">
-        <div class="menu-item">
-          <input type="text" placeholder="메뉴명 (예: 콩국수)" />
-          <button class="btn-remove" onclick="removeMenu(this)" aria-label="메뉴 삭제">✕</button>
-        </div>
-      </div>
+      <label>🍽️ 주문한 메뉴 & 사진</label>
+      <div id="menuList"></div>
       <button class="btn-add" onclick="addMenu()">+ 메뉴 추가</button>
     </div>
 
-    <!-- 사진 -->
+    <!-- 기타 사진 (외관, 내관, 반찬 등) -->
     <div class="card">
-      <label>📸 사진 업로드</label>
-      <div class="photo-upload-area" id="dropZone" onclick="document.getElementById('photoInput').click()">
-        <div class="icon">📷</div>
+      <label>📸 기타 사진 <span class="label-sub">(외관, 내부, 반찬 등)</span></label>
+      <div class="etc-photo-area" onclick="document.getElementById('etcPhotoInput').click()">
+        <div class="icon">🏪</div>
         <div>탭하여 사진 선택</div>
-        <div style="font-size:12px; margin-top:4px;">카메라 촬영 또는 갤러리에서 여러 장 선택</div>
       </div>
-      <input type="file" id="photoInput" multiple accept="image/*" />
-      <div class="photo-grid" id="photoGrid"></div>
+      <input type="file" id="etcPhotoInput" class="file-input-hidden" multiple accept="image/*" />
+      <div class="menu-photo-grid" id="etcPhotoGrid"></div>
     </div>
 
     <!-- 소감 -->
     <div class="card">
       <div class="field">
         <label>💬 나의 소감 / 메모</label>
-        <textarea id="impression" placeholder="간단한 소감, 특별했던 메뉴, 분위기 등 자유롭게 적어주세요.&#10;예: 콩국물이 진짜 진하고 고소했음. 김치는 좀 아쉬웠는데 칼국수랑은 잘 어울림."></textarea>
+        <textarea id="impression" placeholder="간단한 소감, 특별했던 메뉴, 분위기 등 자유롭게 적어주세요."></textarea>
       </div>
       <div class="field">
-        <label>👥 동행자 (선택)</label>
+        <label>👥 동행자 <span class="label-sub">(선택)</span></label>
         <input type="text" id="companion" placeholder="예: 친구, 회사 동료, 혼밥" />
       </div>
     </div>
 
-    <!-- 생성 버튼 -->
     <button class="btn-generate" id="generateBtn" onclick="generatePost()">
       ✨ 블로그 글 생성하기
     </button>
 
-    <!-- 로딩 -->
     <div class="loading" id="loading">
       <div class="spinner"></div>
       <div>AI가 썬스 스타일로 글을 작성하고 있어요...</div>
     </div>
 
-    <!-- 결과 -->
     <div class="result" id="result">
       <div class="result-header">
         <h2>📝 생성된 블로그 글</h2>
@@ -326,7 +208,6 @@
 
   <script src="app.js"></script>
   <script>
-    // 서비스워커 등록
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js');
     }

@@ -1,6 +1,8 @@
 // 썬스 블로그 글 생성기 - app.js
 
-let photos = [];
+let menuItems = []; // { name: '', photos: [{ name, dataUrl }] }
+let etcPhotos = []; // [{ name, dataUrl }]
+let menuIdCounter = 0;
 
 // ── API 키 로컬 저장 ──
 const apiKeyInput = document.getElementById('apiKey');
@@ -21,34 +23,7 @@ apiKeyInput.addEventListener('change', () => {
   }
 });
 
-// ── 사진 업로드 ──
-const dropZone = document.getElementById('dropZone');
-const photoInput = document.getElementById('photoInput');
-const photoGrid = document.getElementById('photoGrid');
-
-dropZone.addEventListener('dragover', (e) => {
-  e.preventDefault();
-  dropZone.classList.add('dragover');
-});
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-dropZone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  dropZone.classList.remove('dragover');
-  handleFiles(e.dataTransfer.files);
-});
-photoInput.addEventListener('change', (e) => handleFiles(e.target.files));
-
-function handleFiles(files) {
-  for (const file of files) {
-    if (!file.type.startsWith('image/')) continue;
-    resizeImage(file, 800).then((resized) => {
-      photos.push({ name: file.name, dataUrl: resized });
-      renderPhotos();
-    });
-  }
-}
-
-// ── 사진 리사이즈 (API 토큰 절약) ──
+// ── 사진 리사이즈 ──
 function resizeImage(file, maxSize) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -77,50 +52,96 @@ function resizeImage(file, maxSize) {
   });
 }
 
-function renderPhotos() {
-  photoGrid.innerHTML = photos.map((p, i) => `
-    <div class="photo-thumb">
-      <img src="${p.dataUrl}" alt="사진 ${i + 1}" />
-      <button class="remove" onclick="removePhoto(${i})" aria-label="사진 삭제">✕</button>
-      <div class="photo-label">${i + 1}. ${p.name.substring(0, 10)}</div>
+// ── 메뉴 관리 ──
+function addMenu() {
+  const id = menuIdCounter++;
+  menuItems.push({ id, name: '', photos: [] });
+  renderMenuList();
+}
+
+function removeMenu(id) {
+  menuItems = menuItems.filter(m => m.id !== id);
+  renderMenuList();
+}
+
+function updateMenuName(id, name) {
+  const item = menuItems.find(m => m.id === id);
+  if (item) item.name = name;
+}
+
+function triggerMenuPhoto(id) {
+  const input = document.getElementById(`menuPhoto_${id}`);
+  if (input) input.click();
+}
+
+async function handleMenuPhoto(id, files) {
+  const item = menuItems.find(m => m.id === id);
+  if (!item) return;
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) continue;
+    const dataUrl = await resizeImage(file, 800);
+    item.photos.push({ name: file.name, dataUrl });
+  }
+  renderMenuList();
+}
+
+function removeMenuPhoto(menuId, photoIdx) {
+  const item = menuItems.find(m => m.id === menuId);
+  if (item) item.photos.splice(photoIdx, 1);
+  renderMenuList();
+}
+
+function renderMenuList() {
+  const list = document.getElementById('menuList');
+  list.innerHTML = menuItems.map(m => `
+    <div class="menu-block">
+      <div class="menu-block-header">
+        <input type="text" placeholder="메뉴명 (예: 콩국수)" value="${m.name}"
+          onchange="updateMenuName(${m.id}, this.value)" />
+        <button class="btn-remove" onclick="removeMenu(${m.id})" aria-label="메뉴 삭제">✕</button>
+      </div>
+      <div class="menu-photo-area" onclick="triggerMenuPhoto(${m.id})">
+        📷 이 메뉴 사진 추가
+      </div>
+      <input type="file" id="menuPhoto_${m.id}" class="file-input-hidden"
+        multiple accept="image/*" onchange="handleMenuPhoto(${m.id}, this.files)" />
+      ${m.photos.length > 0 ? `
+        <div class="menu-photo-grid">
+          ${m.photos.map((p, i) => `
+            <div class="photo-thumb">
+              <img src="${p.dataUrl}" alt="${m.name} 사진 ${i + 1}" />
+              <button class="remove" onclick="removeMenuPhoto(${m.id}, ${i})" aria-label="사진 삭제">✕</button>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
     </div>
   `).join('');
 }
 
-function removePhoto(index) {
-  photos.splice(index, 1);
-  renderPhotos();
-}
-
-// ── 메뉴 추가/삭제 ──
-function addMenu() {
-  const list = document.getElementById('menuList');
-  const item = document.createElement('div');
-  item.className = 'menu-item';
-  item.innerHTML = `
-    <input type="text" placeholder="메뉴명" />
-    <button class="btn-remove" onclick="removeMenu(this)" aria-label="메뉴 삭제">✕</button>
-  `;
-  list.appendChild(item);
-}
-
-function removeMenu(btn) {
-  const list = document.getElementById('menuList');
-  if (list.children.length > 1) {
-    btn.parentElement.remove();
+// ── 기타 사진 관리 ──
+document.getElementById('etcPhotoInput').addEventListener('change', async (e) => {
+  for (const file of e.target.files) {
+    if (!file.type.startsWith('image/')) continue;
+    const dataUrl = await resizeImage(file, 800);
+    etcPhotos.push({ name: file.name, dataUrl });
   }
+  renderEtcPhotos();
+});
+
+function removeEtcPhoto(idx) {
+  etcPhotos.splice(idx, 1);
+  renderEtcPhotos();
 }
 
-// ── 메뉴 목록 가져오기 ──
-function getMenus() {
-  return [...document.querySelectorAll('#menuList .menu-item input')]
-    .map(input => input.value.trim())
-    .filter(v => v);
-}
-
-// ── 사진을 base64로 변환 (Vision API용) ──
-function photoToBase64(photo) {
-  return photo.dataUrl.split(',')[1];
+function renderEtcPhotos() {
+  const grid = document.getElementById('etcPhotoGrid');
+  grid.innerHTML = etcPhotos.map((p, i) => `
+    <div class="photo-thumb">
+      <img src="${p.dataUrl}" alt="기타 사진 ${i + 1}" />
+      <button class="remove" onclick="removeEtcPhoto(${i})" aria-label="사진 삭제">✕</button>
+    </div>
+  `).join('');
 }
 
 // ── 블로그 글 생성 ──
@@ -129,12 +150,10 @@ async function generatePost() {
   const restaurantName = document.getElementById('restaurantName').value.trim();
   const area = document.getElementById('area').value.trim();
   const mapUrl = document.getElementById('mapUrl').value.trim();
-  const address = document.getElementById('address').value.trim();
-  const menus = getMenus();
   const impression = document.getElementById('impression').value.trim();
   const companion = document.getElementById('companion').value.trim();
 
-  // 유효성 검사
+  const menus = menuItems.filter(m => m.name.trim());
   if (!apiKey) return alert('Gemini API Key를 입력해주세요.');
   if (!restaurantName) return alert('식당 이름을 입력해주세요.');
   if (!area) return alert('지역을 입력해주세요.');
@@ -150,7 +169,7 @@ async function generatePost() {
 
   try {
     const content = await callGemini(apiKey, {
-      restaurantName, area, mapUrl, address, menus, impression, companion
+      restaurantName, area, mapUrl, menus, impression, companion
     });
     document.getElementById('resultContent').textContent = content;
     result.classList.add('active');
@@ -172,21 +191,35 @@ async function callGemini(apiKey, data) {
   // 1단계: 식당 정보 검색
   let searchInfo = '';
   try {
-    searchInfo = await searchRestaurant(apiKey, model, data.restaurantName, data.area, data.menus);
+    const menuNames = data.menus.map(m => m.name).join(', ');
+    searchInfo = await searchRestaurant(apiKey, model, data.restaurantName, data.area, menuNames);
   } catch (e) {
     console.log('검색 실패, 검색 없이 진행:', e);
   }
 
-  // 2단계: 블로그 글 작성 (검색 결과 + 사진 포함)
-  const parts = [{ text: userPrompt + (searchInfo ? `\n\n🔍 검색으로 수집한 식당 정보:\n${searchInfo}` : '') }];
+  // 2단계: 블로그 글 작성
+  const fullPrompt = userPrompt + (searchInfo ? `\n\n🔍 검색으로 수집한 식당 정보:\n${searchInfo}` : '');
+  const parts = [{ text: fullPrompt }];
 
-  if (photos.length > 0) {
-    photos.forEach((photo) => {
+  // 메뉴별 사진 추가 (메뉴명 라벨 포함)
+  data.menus.forEach((menu) => {
+    if (menu.photos && menu.photos.length > 0) {
+      parts.push({ text: `\n[다음은 "${menu.name}" 메뉴 사진입니다]` });
+      menu.photos.forEach((photo) => {
+        const base64 = photo.dataUrl.split(',')[1];
+        const mimeType = photo.dataUrl.split(';')[0].split(':')[1];
+        parts.push({ inlineData: { mimeType, data: base64 } });
+      });
+    }
+  });
+
+  // 기타 사진 추가
+  if (etcPhotos.length > 0) {
+    parts.push({ text: '\n[다음은 기타 사진입니다 (외관, 내부, 반찬 등)]' });
+    etcPhotos.forEach((photo) => {
       const base64 = photo.dataUrl.split(',')[1];
       const mimeType = photo.dataUrl.split(';')[0].split(':')[1];
-      parts.push({
-        inlineData: { mimeType, data: base64 }
-      });
+      parts.push({ inlineData: { mimeType, data: base64 } });
     });
   }
 
@@ -238,7 +271,7 @@ async function searchRestaurant(apiKey, model, name, area, menus) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{
-        parts: [{ text: `"${name}" ${area} 맛집에 대해 검색해서 다음 정보를 정리해줘:\n- 대표 메뉴와 특징\n- 식당 역사/스토리\n- 다른 리뷰어들의 공통 평가\n- 가격대\n- 특별한 포인트\n\n주문 메뉴: ${menus.join(', ')}\n\n간결하게 핵심만 정리해줘.` }]
+        parts: [{ text: `"${name}" ${area} 맛집에 대해 검색해서 다음 정보를 정리해줘:\n- 대표 메뉴와 특징\n- 식당 역사/스토리\n- 다른 리뷰어들의 공통 평가\n- 가격대\n- 특별한 포인트\n\n주문 메뉴: ${menus}\n\n간결하게 핵심만 정리해줘.` }]
       }],
       tools: [{ googleSearch: {} }],
       generationConfig: {
@@ -263,7 +296,7 @@ async function searchRestaurant(apiKey, model, name, area, menus) {
     .trim();
 }
 
-// ── 시스템 프롬프트 (스타일 가이드) ──
+// ── 시스템 프롬프트 ──
 function buildSystemPrompt() {
   return `당신은 네이버 블로그에 맛집 리뷰를 작성하는 블로거 "썬스(Suns)"입니다.
 아래 스타일 가이드를 철저히 따라 블로그 글을 작성하세요.
@@ -273,7 +306,7 @@ function buildSystemPrompt() {
 2. **인사**: "안녕하세요! 맛있는 발견을 즐기는 썬스(Suns)입니다. 😊"
 3. **인트로**: 계절/날씨/상황 연결 → 맛집 소개 티저 → 개인 에피소드
 4. **외관/첫인상**: 가게 외관 묘사 + [외관 사진 위치] 표시
-5. **네이버 지도**: [네이버 지도 삽입] 표시 + 주소
+5. **네이버 지도**: [네이버 지도 삽입] 표시 (URL이 제공된 경우만)
 6. **메뉴 소개**: 📋 썬스의 선택: 주문 메뉴 나열
 7. **메뉴별 리뷰**: 🥢 + 소제목, [사진 위치] 표시 → 비주얼 묘사 → 맛 → 식감
 8. **분위기/여담** (선택): ✨ 또는 🍻 매장 분위기, 동행자 이야기
@@ -290,43 +323,51 @@ function buildSystemPrompt() {
 - 괄호 유머: "(먼 산)", "(뒤에서 계속!)"
 - 긍정 위주지만 아쉬운 점도 솔직하게
 
-## 사진 배치
-- 사진이 들어갈 위치에 [사진: 설명] 형태로 표시
+## 사진 배치 규칙
+- 메뉴 사진은 해당 메뉴 리뷰 섹션에 배치
+- 기타 사진(외관, 내부, 반찬)은 사진 내용을 분석하여 적절한 섹션에 배치
+- 사진 위치를 [사진N: 설명] 형태로 표시 (N은 사진 번호)
 - 사진 캡션은 따옴표 스타일: "설명 문구 + 이모지"
-- 사진이 제공된 경우, 사진 내용을 분석하여 적절한 위치에 배치하고 설명 작성
 
 ## 중요
 - 네이버 블로그에 바로 붙여넣기 할 수 있는 형태로 작성
-- 사진 위치를 [사진: 설명] 으로 명확히 표시
 - 해시태그는 반드시 마지막에, #썬스의맛있는발견 으로 끝내기
 - 글 분량은 1500~2500자 사이
 - 검색으로 수집한 식당 정보가 제공되면, 그 정보를 자연스럽게 녹여서 작성하세요
-- 검색 정보의 맛 표현을 참고하되, 반드시 썬스 말투로 재가공하세요
-- 식당의 특별한 포인트(역사, 유명인 방문, 특별한 조리법 등)를 자연스럽게 활용하세요
-- 단, 검색 결과를 그대로 복사하지 말고 썬스의 직접 경험처럼 자연스럽게 표현하세요`;
+- 식당의 특별한 포인트를 자연스럽게 활용하되, 썬스의 직접 경험처럼 표현하세요`;
 }
 
 // ── 사용자 프롬프트 ──
 function buildUserPrompt(data) {
+  const menuNames = data.menus.map(m => m.name).join(', ');
   let prompt = `다음 정보로 썬스 스타일의 맛집 블로그 글을 작성해주세요.
 
 📍 식당 정보
 - 식당명: ${data.restaurantName}
 - 지역: ${data.area}
-- 주문 메뉴: ${data.menus.join(', ')}`;
+- 주문 메뉴: ${menuNames}`;
 
-  if (data.address) prompt += `\n- 주소: ${data.address}`;
   if (data.mapUrl) prompt += `\n- 네이버 지도: ${data.mapUrl}`;
   if (data.companion) prompt += `\n- 동행: ${data.companion}`;
 
   prompt += `\n\n💬 나의 소감\n${data.impression || '(소감 없음 - 자연스럽게 작성해주세요)'}`;
 
-  if (photos.length > 0) {
-    prompt += `\n\n📸 첨부된 사진 ${photos.length}장`;
-    prompt += `\n사진들을 분석하여 적절한 위치에 배치하고, 각 사진에 맞는 설명과 캡션을 작성해주세요.`;
-    prompt += `\n사진 순서: ${photos.map((p, i) => `${i + 1}. ${p.name}`).join(', ')}`;
-  } else {
-    prompt += `\n\n📸 사진 없음 - [사진: 설명] 형태로 사진이 들어갈 위치만 표시해주세요.`;
+  // 메뉴별 사진 정보
+  const menusWithPhotos = data.menus.filter(m => m.photos && m.photos.length > 0);
+  if (menusWithPhotos.length > 0) {
+    prompt += '\n\n📸 메뉴별 사진 정보';
+    menusWithPhotos.forEach(m => {
+      prompt += `\n- "${m.name}": ${m.photos.length}장 첨부됨 → 이 메뉴 리뷰 섹션에 배치하고 사진 내용에 맞는 설명 작성`;
+    });
+  }
+
+  if (etcPhotos.length > 0) {
+    prompt += `\n\n📸 기타 사진 ${etcPhotos.length}장 (외관/내부/반찬 등)`;
+    prompt += '\n→ 사진 내용을 분석하여 적절한 섹션(외관, 분위기, 밑반찬 등)에 배치하고 설명 작성';
+  }
+
+  if (menusWithPhotos.length === 0 && etcPhotos.length === 0) {
+    prompt += '\n\n📸 사진 없음 - [사진: 설명] 형태로 사진이 들어갈 위치만 표시해주세요.';
   }
 
   return prompt;
@@ -341,3 +382,6 @@ function copyResult() {
     setTimeout(() => btn.textContent = '📋 복사', 1500);
   });
 }
+
+// ── 초기 메뉴 1개 추가 ──
+addMenu();
