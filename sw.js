@@ -1,4 +1,4 @@
-const CACHE_NAME = 'suns-blog-v2';
+const CACHE_NAME = 'suns-blog-v3';
 const ASSETS = [
   './index.html',
   './app.js',
@@ -24,7 +24,12 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   // API 호출은 캐시하지 않음
   if (e.request.url.includes('googleapis.com')) return;
+  // 네트워크 우선, 실패 시 캐시 사용
   e.respondWith(
-    caches.match(e.request).then((cached) => cached || fetch(e.request))
+    fetch(e.request).then((response) => {
+      const clone = response.clone();
+      caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+      return response;
+    }).catch(() => caches.match(e.request))
   );
 });
