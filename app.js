@@ -214,7 +214,36 @@ async function callGemini(apiKey, data) {
   }
 
   const json = await response.json();
-  return json.candidates[0].content.parts[0].text;
+  
+  // 응답 디버깅
+  console.log('Gemini 응답:', JSON.stringify(json, null, 2));
+  
+  // 응답에서 텍스트 추출 (Google Search 도구 사용 시 구조가 다를 수 있음)
+  if (!json.candidates || json.candidates.length === 0) {
+    throw new Error('AI가 응답을 생성하지 못했어요. 다시 시도해주세요.');
+  }
+  
+  const candidate = json.candidates[0];
+  
+  // 안전 필터에 걸린 경우
+  if (candidate.finishReason === 'SAFETY') {
+    throw new Error('안전 필터에 의해 차단되었어요. 입력 내용을 수정해주세요.');
+  }
+  
+  // content.parts에서 텍스트만 추출
+  if (!candidate.content || !candidate.content.parts) {
+    throw new Error('응답에 내용이 없어요. 다시 시도해주세요.');
+  }
+  
+  const textParts = candidate.content.parts
+    .filter(p => p.text)
+    .map(p => p.text);
+  
+  if (textParts.length === 0) {
+    throw new Error('텍스트 응답이 없어요. 다시 시도해주세요.');
+  }
+  
+  return textParts.join('\n');
 }
 
 // ── 시스템 프롬프트 (스타일 가이드) ──
