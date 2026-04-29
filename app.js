@@ -203,7 +203,10 @@ async function callGemini(apiKey, data) {
       }],
       generationConfig: {
         temperature: 0.8,
-        maxOutputTokens: 4000
+        maxOutputTokens: 4000,
+        thinkingConfig: {
+          thinkingBudget: 0
+        }
       }
     })
   });
@@ -236,14 +239,21 @@ async function callGemini(apiKey, data) {
   }
   
   const textParts = candidate.content.parts
-    .filter(p => p.text)
+    .filter(p => p.text && !p.text.startsWith('tool_code') && !p.thought)
     .map(p => p.text);
   
   if (textParts.length === 0) {
     throw new Error('텍스트 응답이 없어요. 다시 시도해주세요.');
   }
   
-  return textParts.join('\n');
+  // thinking 텍스트 제거 (thought 플래그 없이 섞여있는 경우)
+  const result = textParts.join('\n')
+    .replace(/^thought.*$/gm, '')
+    .replace(/^tool_code.*$/gm, '')
+    .replace(/^print\(.*\)$/gm, '')
+    .trim();
+  
+  return result;
 }
 
 // ── 시스템 프롬프트 (스타일 가이드) ──
