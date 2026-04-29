@@ -163,50 +163,45 @@ async function generatePost() {
   }
 }
 
-// ── Gemini API 호출 ──
+// ── Gemini API 호출 (2단계: 검색 → 글 작성) ──
 async function callGemini(apiKey, data) {
   const systemPrompt = buildSystemPrompt();
   const userPrompt = buildUserPrompt(data);
+  const model = 'gemini-2.5-flash';
 
-  // Gemini 요청 본문 구성
-  const parts = [{ text: userPrompt }];
+  // 1단계: 식당 정보 검색
+  let searchInfo = '';
+  try {
+    searchInfo = await searchRestaurant(apiKey, model, data.restaurantName, data.area, data.menus);
+  } catch (e) {
+    console.log('검색 실패, 검색 없이 진행:', e);
+  }
 
-  // 사진이 있으면 인라인 이미지 추가
+  // 2단계: 블로그 글 작성 (검색 결과 + 사진 포함)
+  const parts = [{ text: userPrompt + (searchInfo ? `\n\n🔍 검색으로 수집한 식당 정보:\n${searchInfo}` : '') }];
+
   if (photos.length > 0) {
     photos.forEach((photo) => {
       const base64 = photo.dataUrl.split(',')[1];
       const mimeType = photo.dataUrl.split(';')[0].split(':')[1];
       parts.push({
-        inlineData: {
-          mimeType: mimeType,
-          data: base64
-        }
+        inlineData: { mimeType, data: base64 }
       });
     });
   }
 
-  const model = 'gemini-2.5-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: systemPrompt }]
-      },
-      contents: [{
-        parts: parts
-      }],
-      tools: [{
-        googleSearch: {}
-      }],
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ parts }],
       generationConfig: {
         temperature: 0.8,
         maxOutputTokens: 4000,
-        thinkingConfig: {
-          thinkingBudget: 0
-        }
+        thinkingConfig: { thinkingBudget: 0 }
       }
     })
   });
@@ -217,43 +212,55 @@ async function callGemini(apiKey, data) {
   }
 
   const json = await response.json();
-  
-  // 응답 디버깅
-  console.log('Gemini 응답:', JSON.stringify(json, null, 2));
-  
-  // 응답에서 텍스트 추출 (Google Search 도구 사용 시 구조가 다를 수 있음)
-  if (!json.candidates || json.candidates.length === 0) {
+  console.log('Gemini 글 작성 응답:', JSON.stringify(json, null, 2));
+
+  if (!json.candidates || !json.candidates[0]?.content?.parts) {
     throw new Error('AI가 응답을 생성하지 못했어요. 다시 시도해주세요.');
   }
-  
-  const candidate = json.candidates[0];
-  
-  // 안전 필터에 걸린 경우
-  if (candidate.finishReason === 'SAFETY') {
-    throw new Error('안전 필터에 의해 차단되었어요. 입력 내용을 수정해주세요.');
-  }
-  
-  // content.parts에서 텍스트만 추출
-  if (!candidate.content || !candidate.content.parts) {
-    throw new Error('응답에 내용이 없어요. 다시 시도해주세요.');
-  }
-  
-  const textParts = candidate.content.parts
-    .filter(p => p.text && !p.text.startsWith('tool_code') && !p.thought)
+
+  const textParts = json.candidates[0].content.parts
+    .filter(p => p.text)
     .map(p => p.text);
-  
+
   if (textParts.length === 0) {
     throw new Error('텍스트 응답이 없어요. 다시 시도해주세요.');
   }
-  
-  // thinking 텍스트 제거 (thought 플래그 없이 섞여있는 경우)
-  const result = textParts.join('\n')
-    .replace(/^thought.*$/gm, '')
-    .replace(/^tool_code.*$/gm, '')
-    .replace(/^print\(.*\)$/gm, '')
+
+  return textParts.join('\n').trim();
+}
+
+// ── 1단계: Google Search로 식당 정보 수집 ──
+async function searchRestaurant(apiKey, model, name, area, menus) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{
+        parts: [{ text: `"${name}" ${area} 맛집에 대해 검색해서 다음 정보를 정리해줘:\n- 대표 메뉴와 특징\n- 식당 역사/스토리\n- 다른 리뷰어들의 공통 평가\n- 가격대\n- 특별한 포인트\n\n주문 메뉴: ${menus.join(', ')}\n\n간결하게 핵심만 정리해줘.` }]
+      }],
+      tools: [{ googleSearch: {} }],
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 1000,
+        thinkingConfig: { thinkingBudget: 0 }
+      }
+    })
+  });
+
+  if (!response.ok) return '';
+
+  const json = await response.json();
+  console.log('검색 응답:', JSON.stringify(json, null, 2));
+
+  if (!json.candidates || !json.candidates[0]?.content?.parts) return '';
+
+  return json.candidates[0].content.parts
+    .filter(p => p.text)
+    .map(p => p.text)
+    .join('\n')
     .trim();
-  
-  return result;
 }
 
 // ── 시스템 프롬프트 (스타일 가이드) ──
@@ -293,19 +300,15 @@ function buildSystemPrompt() {
 - 사진 위치를 [사진: 설명] 으로 명확히 표시
 - 해시태그는 반드시 마지막에, #썬스의맛있는발견 으로 끝내기
 - 글 분량은 1500~2500자 사이
-
-## Google 검색 활용 규칙
-- 글을 작성하기 전에 반드시 식당명 + 지역으로 검색하여 실제 정보를 수집하세요
-- 검색에서 얻은 정보를 활용하세요: 대표 메뉴의 특징, 식당의 역사/스토리, 다른 리뷰어들의 공통 평가, 가격대, 영업시간 등
-- 검색 결과의 맛 표현을 참고하되, 반드시 썬스 말투로 재가공하세요
-- 검색에서 발견한 식당의 특별한 포인트(예: 몇 년 전통, 유명인 방문, 특별한 조리법 등)를 자연스럽게 녹여내세요
+- 검색으로 수집한 식당 정보가 제공되면, 그 정보를 자연스럽게 녹여서 작성하세요
+- 검색 정보의 맛 표현을 참고하되, 반드시 썬스 말투로 재가공하세요
+- 식당의 특별한 포인트(역사, 유명인 방문, 특별한 조리법 등)를 자연스럽게 활용하세요
 - 단, 검색 결과를 그대로 복사하지 말고 썬스의 직접 경험처럼 자연스럽게 표현하세요`;
 }
 
 // ── 사용자 프롬프트 ──
 function buildUserPrompt(data) {
   let prompt = `다음 정보로 썬스 스타일의 맛집 블로그 글을 작성해주세요.
-먼저 "${data.restaurantName} ${data.area} 맛집"으로 검색하여 이 식당의 실제 정보(대표 메뉴 특징, 역사, 리뷰 평가 등)를 수집한 후, 그 정보를 바탕으로 더 정확하고 풍부한 글을 작성해주세요.
 
 📍 식당 정보
 - 식당명: ${data.restaurantName}
